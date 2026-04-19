@@ -84,16 +84,9 @@ class EvaluateRequest(BaseModel):
     text: str
 
 
-class Finding(BaseModel):
-    type: str
-    encoding_detected: str
-    notes: str
-
-
 class EvaluateResponse(BaseModel):
     flagged: bool
     confidence: str
-    findings: list[Finding]
     explanation: str
     recommended_action: str
 
@@ -207,7 +200,14 @@ async def evaluate(
         error=None,
     )
 
-    return result
+    # Strip findings before returning — don't leak detection signals to red team.
+    # Full findings (including encoding_detected) are preserved in the server log.
+    return {
+        "flagged": result.get("flagged"),
+        "confidence": result.get("confidence"),
+        "explanation": result.get("explanation"),
+        "recommended_action": result.get("recommended_action"),
+    }
 
 
 @app.get("/logs")
