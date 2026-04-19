@@ -21,7 +21,7 @@ def detect_cardholder_data(text: str) -> dict:
     Raises anthropic.APIError on unrecoverable API failures.
     """
     response = _get_client().messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-haiku-4-5",
         max_tokens=1024,
         system=[
             {
