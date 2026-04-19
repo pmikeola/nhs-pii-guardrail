@@ -148,7 +148,10 @@ You are not limited to the system prompt. In `api.py` you can add:
 - **Rate limiting per team key** — limit requests per minute
 - **Pre-screening** — run a fast regex pass to immediately block obvious PANs before the AI call
 
-**5. Things to avoid**
+**5. Bump the version**
+Every push that changes the guardrail must increment the version in `version.py`. The format is `v<major>.<minor>` — for this cohort the sequence is `v1.0` → `v1.1` → `v1.2`. The app will refuse to start if the format is wrong. This version is recorded in every log row so attacks can be analysed per-round.
+
+**6. Things to avoid**
 - Do not remove the `_canary` check from `guardrail.py` — it is a safety net
 - Do not commit your `.env` file — it contains secret keys
 - Do not change the JSON output structure that `guardrail.py` expects, or it will break

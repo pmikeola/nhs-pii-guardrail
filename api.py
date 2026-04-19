@@ -2,6 +2,7 @@ import csv
 import hashlib
 import logging
 import os
+import re
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +14,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from guardrail import detect_cardholder_data
+from version import GUARDRAIL_VERSION
 
 load_dotenv()
 
@@ -55,13 +57,19 @@ if not API_KEYS:
 if not ADMIN_KEY:
     raise RuntimeError("ADMIN_API_KEY must be set.")
 
+if not re.match(r'^v\d+\.\d+$', GUARDRAIL_VERSION):
+    raise RuntimeError(
+        f"Invalid GUARDRAIL_VERSION {GUARDRAIL_VERSION!r} in version.py. "
+        f"Must be v<major>.<minor> (e.g. v1.0, v1.1)."
+    )
+
 
 # ── Persistent file log ────────────────────────────────────────────────────────
 # LOG_DIR defaults to ./data locally; set to /data in Railway (mounted volume).
 # The volume persists across redeploys so logs survive blue team pushes.
 
 LOG_FIELDS = [
-    "timestamp", "team", "ip", "input_hash", "input_length",
+    "timestamp", "guardrail_version", "team", "ip", "input_hash", "input_length",
     "input_preview", "flagged", "confidence", "recommended_action",
     "findings_count", "error",
 ]
@@ -134,6 +142,7 @@ def _record_request(
 ) -> None:
     row = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "guardrail_version": GUARDRAIL_VERSION,
         "team": team,
         "ip": ip,
         "input_hash": input_hash,
