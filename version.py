@@ -4,4 +4,4 @@
 # For this cohort the sequence is: v1.0 → v1.1 → v1.2 (max two rounds)
 # ============================================================================
 
-GUARDRAIL_VERSION = "bad"
+GUARDRAIL_VERSION = "v1.0"
