@@ -1,10 +1,10 @@
 import csv
 import hashlib
-import io
 import logging
 import os
 import threading
 from datetime import datetime, timezone
+from pathlib import Path
 
 import anthropic
 from dotenv import load_dotenv
@@ -56,12 +56,29 @@ if not ADMIN_KEY:
     raise RuntimeError("ADMIN_API_KEY must be set.")
 
 
-# ── In-memory request log ──────────────────────────────────────────────────────
-# Stored in memory — resets on each deploy. Good enough for round-based exercises.
-# For persistence across deploys, swap _request_log for a SQLite file or Railway volume.
+# ── Persistent file log ────────────────────────────────────────────────────────
+# LOG_DIR defaults to ./data locally; set to /data in Railway (mounted volume).
+# The volume persists across redeploys so logs survive blue team pushes.
 
+LOG_FIELDS = [
+    "timestamp", "team", "ip", "input_hash", "input_length",
+    "input_preview", "flagged", "confidence", "recommended_action",
+    "findings_count", "error",
+]
+
+LOG_DIR = Path(os.environ.get("LOG_DIR", "./data"))
+LOG_FILE = LOG_DIR / "requests.csv"
 _log_lock = threading.Lock()
-_request_log: list[dict] = []
+
+
+def _ensure_log_file() -> None:
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    if not LOG_FILE.exists():
+        with open(LOG_FILE, "w", newline="") as f:
+            csv.DictWriter(f, fieldnames=LOG_FIELDS).writeheader()
+
+
+_ensure_log_file()
 
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
@@ -115,7 +132,7 @@ def _record_request(
     findings_count: int,
     error: str | None,
 ) -> None:
-    entry = {
+    row = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "team": team,
         "ip": ip,
@@ -129,7 +146,8 @@ def _record_request(
         "error": error,
     }
     with _log_lock:
-        _request_log.append(entry)
+        with open(LOG_FILE, "a", newline="") as f:
+            csv.DictWriter(f, fieldnames=LOG_FIELDS).writerow(row)
 
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
@@ -200,8 +218,8 @@ async def evaluate(
     )
 
     # Only return the three verdict fields — findings and explanation are stripped
-    # to avoid leaking detection signals (encoding methods, plaintext vs encoded, etc).
-    # Full internal verdict is preserved in the server log for blue team review.
+    # to avoid leaking detection signals to the red team.
+    # Full internal verdict is preserved in the log file for blue team review.
     return {
         "flagged": result.get("flagged"),
         "confidence": result.get("confidence"),
@@ -213,20 +231,11 @@ async def evaluate(
 async def download_logs(_key: str = Depends(require_admin_key)):
     """Download all requests as a CSV. Protected by ADMIN_API_KEY."""
     with _log_lock:
-        snapshot = list(_request_log)
+        content = LOG_FILE.read_text() if LOG_FILE.exists() else "No requests recorded yet.\n"
 
-    output = io.StringIO()
-    if snapshot:
-        writer = csv.DictWriter(output, fieldnames=snapshot[0].keys())
-        writer.writeheader()
-        writer.writerows(snapshot)
-    else:
-        output.write("No requests recorded yet.\n")
-
-    output.seek(0)
     filename = f"guardrail_logs_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}.csv"
     return StreamingResponse(
-        iter([output.read()]),
+        iter([content]),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )

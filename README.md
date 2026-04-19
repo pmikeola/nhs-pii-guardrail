@@ -162,7 +162,7 @@ You are not limited to the system prompt. In `api.py` you can add:
 3. Test with a known payload:
 
 ```bash
-curl -X POST https://your-api-url/evaluate \
+curl -X POST https://cardholder-data-guardrail-production.up.railway.app/evaluate \
   -H "X-API-Key: your-team-key" \
   -H "Content-Type: application/json" \
   -d '{"text": "My card is 4111 1111 1111 1111"}'
@@ -175,6 +175,6 @@ This should return `"flagged": true` and `"recommended_action": "block"`. If it 
 ## Downloading the attack log (instructors only)
 
 ```bash
-curl -o logs.csv https://your-api-url/logs \
+curl -o logs.csv https://cardholder-data-guardrail-production.up.railway.app/logs \
   -H "X-API-Key: your-admin-key"
 ```
