@@ -42,12 +42,15 @@ def _parse_api_keys(raw: str) -> dict[str, str]:
     return result
 
 
-API_KEYS: dict[str, str] = _parse_api_keys(os.environ.get("GUARDRAIL_API_KEYS", ""))
+_raw_keys = os.environ.get("GUARDRAIL_API_KEYS", "")
+API_KEYS: dict[str, str] = _parse_api_keys(_raw_keys)
 ADMIN_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
 if not API_KEYS:
     raise RuntimeError(
-        "GUARDRAIL_API_KEYS must be set. Format: team1:key1,team2:key2"
+        f"GUARDRAIL_API_KEYS is not set correctly. "
+        f"Raw value read: {_raw_keys!r}. "
+        f"Expected format: team1:key1,team2:key2"
     )
 if not ADMIN_KEY:
     raise RuntimeError("ADMIN_API_KEY must be set.")
