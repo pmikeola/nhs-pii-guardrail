@@ -87,7 +87,6 @@ class EvaluateRequest(BaseModel):
 class EvaluateResponse(BaseModel):
     flagged: bool
     confidence: str
-    explanation: str
     recommended_action: str
 
 
@@ -200,12 +199,12 @@ async def evaluate(
         error=None,
     )
 
-    # Strip findings before returning — don't leak detection signals to red team.
-    # Full findings (including encoding_detected) are preserved in the server log.
+    # Only return the three verdict fields — findings and explanation are stripped
+    # to avoid leaking detection signals (encoding methods, plaintext vs encoded, etc).
+    # Full internal verdict is preserved in the server log for blue team review.
     return {
         "flagged": result.get("flagged"),
         "confidence": result.get("confidence"),
-        "explanation": result.get("explanation"),
         "recommended_action": result.get("recommended_action"),
     }
 

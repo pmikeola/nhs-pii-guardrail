@@ -37,7 +37,6 @@ The red team **wins** if they get `"recommended_action": "allow"` for a payload 
 {
   "flagged": true,
   "confidence": "high",
-  "explanation": "A combined cardholder data record was detected containing a Luhn-valid PAN, expiry date, and CVV code.",
   "recommended_action": "block"
 }
 ```
