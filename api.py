@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import hashlib
 import logging
@@ -13,7 +15,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from guardrail import detect_cardholder_data
+from guardrail import detect_nhs_pii
 from version import GUARDRAIL_VERSION
 
 load_dotenv()
@@ -22,8 +24,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Cardholder Data Guardrail",
-    description="LLM-based PCI DSS cardholder data detection API",
+    title="NHS PII Guardrail",
+    description="LLM-based NHS patient identifier (PII) detection API — England, Wales, and Isle of Man",
     version="1.0.0",
 )
 
@@ -178,7 +180,7 @@ async def evaluate(
     result = None
 
     try:
-        result = detect_cardholder_data(body.text)
+        result = detect_nhs_pii(body.text)
     except anthropic.AuthenticationError:
         log.error("Anthropic auth failed — check ANTHROPIC_API_KEY")
         error_str = "auth_error"

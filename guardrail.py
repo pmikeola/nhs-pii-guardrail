@@ -12,12 +12,12 @@ def _get_client() -> anthropic.Anthropic:
     return _client
 
 
-def detect_cardholder_data(text: str) -> dict:
+def detect_nhs_pii(text: str) -> dict:
     """
-    Analyze text for cardholder data using Claude.
+    Analyze text for NHS patient identifiers using Claude.
 
     Returns a dict with: flagged, confidence, findings, explanation,
-    recommended_action. Never contains raw card data.
+    recommended_action. Never contains raw PII values.
     Raises anthropic.APIError on unrecoverable API failures.
     """
     response = _get_client().messages.create(
@@ -56,7 +56,7 @@ def detect_cardholder_data(text: str) -> dict:
     _validate(result)
 
     # Canary check: missing or wrong value may indicate a successful prompt injection
-    if result.get("_canary") != "GUARDRAIL-V1":
+    if result.get("_canary") != "GUARDRAIL-PHI-V1":
         result["recommended_action"] = "review"
         result["explanation"] = result.get("explanation", "") + " [WARNING: integrity check failed]"
 
